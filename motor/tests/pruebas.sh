@@ -42,12 +42,17 @@ revisar "caja sobre un canal escribe P5" bash -c \
 
 echo "Paralelo contra secuencial, imagen de 512x512:"
 ./generar "$trabajo/grande.ppm" 512 512 > /dev/null
-for filtro in gris caja; do
-    ./motor "$filtro" "$trabajo/grande.ppm" "$trabajo/$filtro-par" 
+for filtro in gris caja gaussiano; do
     ./motor "$filtro" "$trabajo/grande.ppm" "$trabajo/$filtro-sec" --secuencial
-    revisar "$filtro idéntico con uno y con varios hilos" \
-        ./comparar "$trabajo/$filtro-par" "$trabajo/$filtro-sec"
+    for hilos in 1 8; do
+        OMP_NUM_THREADS="$hilos" ./motor "$filtro" "$trabajo/grande.ppm" "$trabajo/$filtro-par-$hilos"
+        revisar "$filtro idéntico con $hilos hilo(s)" \
+            ./comparar "$trabajo/$filtro-par-$hilos" "$trabajo/$filtro-sec"
+    done
 done
+
+echo "Gaussiano separable contra forma directa 5x5:"
+revisar "gaussiano separable contra forma directa" ./test_gaussiano
 
 echo "Filtro desconocido:"
 # El motor sale con código 1 al rechazar la cadena, así que su salida se

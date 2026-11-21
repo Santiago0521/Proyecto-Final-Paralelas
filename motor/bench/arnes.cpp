@@ -25,6 +25,7 @@ Imagen aplicar(const std::string& filtro, const Imagen& entrada, bool secuencial
     }
     if (filtro == "sobel") return secuencial ? sobel_secuencial(entrada) : sobel_paralelo(entrada);
     if (filtro == "otsu") return secuencial ? otsu_secuencial(entrada) : otsu_paralelo(entrada);
+    if (filtro == "gaussiano_bloques") return gaussiano_bloques(entrada);
     throw std::runtime_error("filtro desconocido: " + filtro);
 }
 
