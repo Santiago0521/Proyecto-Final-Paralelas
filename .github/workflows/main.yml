@@ -1,0 +1,54 @@
+
+name: CI Motor
+
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    name: Compilar, probar y analizar
+    runs-on: ubuntu-latest
+
+    env:
+      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Instalar herramientas
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Instalar Build Wrapper de SonarQube
+        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v8.5.0
+
+      - name: Compilar y ejecutar pruebas
+        run: |
+          build-wrapper-linux-x86-64 --out-dir "$BUILD_WRAPPER_OUT_DIR" bash -c '
+            make -C motor clean &&
+            make -C motor all \
+              CXX=g++ \
+              CXXFLAGS="-std=c++17 -O2 -Wall -Wextra -fopenmp" &&
+            make -C motor pruebas \
+              CXX=g++ \
+              CXXFLAGS="-std=c++17 -O2 -Wall -Wextra -fopenmp"
+          '
+
+      - name: Analizar con SonarQube Cloud
+        uses: SonarSource/sonarqube-scan-action@v8.5.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            --define "sonar.cfamily.compile-commands=${{ env.BUILD_WRAPPER_OUT_DIR }}/compile_commands.json"
+
+          
